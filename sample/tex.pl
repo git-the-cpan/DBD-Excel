@@ -36,7 +36,7 @@ print<<"----";
 #--------------------------------------------------------------
 # 3. INSERT(with params)
 ----
-my $hSt = $hDb->prepare(q/INSERT INTO TEST VALUES (?, ?, ?, ?, ?)/);
+$hSt = $hDb->prepare(q/INSERT INTO TEST VALUES (?, ?, ?, ?, ?)/);
 $hSt->execute(4, 'Newman 4', 'New Dept', 30, 'newman4@hippo2000.net');
 $hSt->execute(5, 'Newman 5', 'New Dept', 32, 'newman5@hippo2000.net');
 
@@ -44,7 +44,7 @@ print<<"----";
 #--------------------------------------------------------------
 # 4. DELETE(with params)
 ----
-my $hSt = $hDb->prepare(q/DELETE FROM TEST WHERE No = ?/);
+$hSt = $hDb->prepare(q/DELETE FROM TEST WHERE No = ?/);
 $hSt->execute(1);
 $hSt->execute(3);
 print<<"----";
@@ -57,7 +57,7 @@ print<<"----";
 #--------------------------------------------------------------
 # 6. SELECT(again)
 ----
-my $hSt = $hDb->prepare(q/SELECT * FROM TEST/);
+$hSt = $hDb->prepare(q/SELECT * FROM TEST/);
 $hSt->execute();
 while(my $raRes = $hSt->fetchrow_arrayref()) {
     print "DATA:", join(',', @$raRes), "\n";
@@ -73,7 +73,7 @@ print<<"----";
 #--------------------------------------------------------------
 # 1. SELECT(with no params): VTBL
 ----
-my $hSt = $hDb->prepare(q/SELECT * FROM TESTV/);
+$hSt = $hDb->prepare(q/SELECT * FROM TESTV/);
 $hSt->execute();
 while(my $raRes = $hSt->fetchrow_arrayref()) {
     print "DATA:", join(',', @$raRes), "\n";
@@ -97,20 +97,20 @@ print<<"----";
 #--------------------------------------------------------------
 # 4. DELETE(with params)
 ----
-my $hSt = $hDb->prepare(q/DELETE FROM TESTV WHERE No = ?/);
+$hSt = $hDb->prepare(q/DELETE FROM TESTV WHERE No = ?/);
 $hSt->execute(2);
 print<<"----";
 #--------------------------------------------------------------
 # 5. INSERT(with params)
 ----
-my $hSt = $hDb->prepare(q/INSERT INTO TESTV VALUES (?, ?, ?, ?, ?)/);
+$hSt = $hDb->prepare(q/INSERT INTO TESTV VALUES (?, ?, ?, ?, ?)/);
 $hSt->execute(4, 'Newman 4', 'New Dept', 30, 'KABA');
 $hSt->execute(5, 'Newman 5', 'New Dept', 32, 'DESUYO');
 print<<"----";
 #--------------------------------------------------------------
 # 6. SELECT(again)
 ----
-my $hSt = $hDb->prepare(q/SELECT * FROM TESTV/);
+$hSt = $hDb->prepare(q/SELECT * FROM TESTV/);
 $hSt->execute();
 while(my $raRes = $hSt->fetchrow_arrayref()) {
     print "DATA:", join(',', @$raRes), "\n";

@@ -1,5 +1,9 @@
 Revision history for Perl extension DBD::Excel.
 
+0.03  Sat Jun  25 22:00 2001
+    - Fix Excel.pm : INSERT and SELECT after CREATE TABLE
+      (Thank you,  Polak Michal)
+
 0.03  Sat Jun  2 18:00 2001
     - Mod Excel.pm : non-Ascii table name and column name
       (Thank you,  Yamamura Seiko)

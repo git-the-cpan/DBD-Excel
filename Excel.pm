@@ -25,7 +25,7 @@ package DBD::Excel;
 use vars qw(@ISA $VERSION $hDr $err $errstr $sqlstate);
 @ISA = qw(DynaLoader);
 
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 $err = 0;           # holds error code   for DBI::err
 $errstr = "";       # holds error string for DBI::errstr
@@ -68,7 +68,6 @@ $DBD::Excel::dr::imp_data_size = 0;
 #-------------------------------------------------------------------------------
 sub connect($$@) {
     my($hDr, $sDbName, $sUsr, $sAuth, $rhAttr)= @_;
-
 #1. create database-handle
     my $hDb = DBI::_new_dbh($hDr, {
         Name         => $sDbName,
@@ -89,6 +88,8 @@ sub connect($$@) {
     my %hTbl;
     for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
         my $oWkS = $oBook->{Worksheet}[$iSheet];
+        $oWkS->{MaxCol} ||=0;
+        $oWkS->{MinCol} ||=0;
         my($raColN, $rhColN) = _getColName($oWkS, 0, $oWkS->{MinCol}, 
                             $oWkS->{MaxCol}-$oWkS->{MinCol}+1);
 
@@ -147,6 +148,8 @@ sub connect($$@) {
 sub _getColName($$$$) {
     my($oWkS, $iRow, $iColS, $iColCnt) = @_;
     my $iColMax;
+
+#   $iColS ||= 0;
     if(defined $iColCnt) {
         if(($iColS + $iColCnt - 1) <= $oWkS->{MaxCol}){
             $iColMax = $iColS + $iColCnt - 1;
@@ -172,7 +175,7 @@ sub _getColName($$$$) {
         my $iCnt = grep(/\Q$sName\E/, @aColName);
         $sName = "${sName}_${iCnt}" if($iCnt);
         push @aColName, $sName;
-        $hColName{$sName} = ($iC-$iColS);
+        $hColName{$sName} = ($iC - $iColS);
     }
     return (\@aColName, \%hColName)
 }
@@ -599,7 +602,6 @@ sub open_table ($$$$$) {
         if(defined $rhTbl->{$sTable}) {
             die "Cannot create table $sTable : Already exists";
         }
-
 #1.2 create table object(DBD::Excel::Table)
         my @aColName;
         my %hColName;
@@ -674,11 +676,22 @@ sub push_names ($$$) {
     my $oBook = $oData->{Database}->{xl_book};
 #2.add new worksheet
     my $iWkN = $oBook->AddWorksheet($oThis->{xlt_name});
+    $oBook->{Worksheet}[$iWkN]->{MinCol}=0;
+    $oBook->{Worksheet}[$iWkN]->{MaxCol}=0;
+
 #2.1 set names
+    my @aColName =();
+    my %hColName =();
     for(my $i = 0; $i<=$#$raNames; $i++) {
         $oBook->AddCell($iWkN, 0, $i, $raNames->[$i], 0);
+        push @aColName, $raNames->[$i];
+        $hColName{$raNames->[$i]} = $i;
     }
-    $oThis->{xlt_colcnt} = $#$raNames;
+    $oThis->{xlt_colcnt}  = $#$raNames + 1;
+    $oThis->{xlt_sheetno} = $iWkN;
+    $oThis->{xlt_sheet}   = $oBook->{Worksheet}[$iWkN];
+    $oThis->{col_nums}    = \%hColName;
+    $oThis->{col_names}   = \@aColName;
     return 1;
 }
 #-------------------------------------------------------------------------------
@@ -723,12 +736,17 @@ sub push_row ($$$) {
             $oThis->{xlt_sheet}->{Cells}[$oThis->{xlt_datrow}][$oThis->{xlt_startcol}+$i]->{FormatNo};
     }
     for(my $i = 0; $i<$oThis->{xlt_colcnt}; $i++) {
+        my $oFmt = $aFmt[$i];
+        $oFmt ||= 0;
+        my $oFld = $raFields->[$i];
+        $oFld ||= '';
+
         $oData->{Database}->{xl_book}->AddCell(
             $oThis->{xlt_sheetno}, 
             $oThis->{xlt_currow} + $oThis->{xlt_datrow}, 
             $i + $oThis->{xlt_startcol}, 
-            $raFields->[$i],
-            $aFmt[$i]
+            $oFld,
+            $oFmt
             );
     }
     ++$oThis->{xlt_currow};

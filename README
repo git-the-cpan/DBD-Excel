@@ -32,7 +32,7 @@ INSTALLATION
         ftp://ftp.microsoft.com/Softlib/MSLFILES/nmake15.exe
 
 VERSION
-    This document refers to version 0.03 of DBD::Excel, released Jun 2, 2001.
+    This document refers to version 0.04 of DBD::Excel, released Jun 25, 2001.
 
 AUTHOR
     Kawai Takanori (kwitknr@cpan.org)
