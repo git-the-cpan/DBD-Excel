@@ -1,5 +1,10 @@
 Revision history for Perl extension DBD::Excel.
 
+0.06  Tue Nov 12 19:30 2002
+    - Fix Excel.pm    : prefix xlt_ -> xl_
+                        ex_dir -> xl_dir (Thank you, Dong Wang)
+    - Fix Makefile.PL : realclean parameter
+
 0.05  Fri Jul 13 19:30 2001
     - Fix Excel.pm : column name handling
     - Add Excel.pm : xl_ignore option

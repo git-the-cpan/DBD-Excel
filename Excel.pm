@@ -25,7 +25,7 @@ package DBD::Excel;
 use vars qw(@ISA $VERSION $hDr $err $errstr $sqlstate);
 @ISA = qw(DynaLoader);
 
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 $err = 0;           # holds error code   for DBI::err
 $errstr = "";       # holds error string for DBI::errstr
@@ -109,18 +109,18 @@ sub connect($$@) {
 =cut
         my $sTblN = ($rhAttr->{xl_ignorecase})? uc($oWkS->{Name}): $oWkS->{Name};
         $hTbl{$sTblN} = {
-                    xlt_vtbl        => undef,
-                    xlt_ttlrow      => 0,
-                    xlt_startcol    => $oWkS->{MinCol},
-#                    xlt_colcnt      => $oWkS->{MaxCol}-$oWkS->{MinCol}+1,
-                    xlt_colcnt      => $iColCnt, # $MaxCol - $MinCol - $HidCols + 1,
-                    xlt_datrow      => 1,
-                    xlt_datlmt      => undef,
+                    xl_t_vtbl        => undef,
+                    xl_t_ttlrow      => 0,
+                    xl_t_startcol    => $oWkS->{MinCol},
+#                    xl_t_colcnt      => $oWkS->{MaxCol}-$oWkS->{MinCol}+1,
+                    xl_t_colcnt      => $iColCnt, # $MaxCol - $MinCol - $HidCols + 1,
+                    xl_t_datrow      => 1,
+                    xl_t_datlmt      => undef,
 
-                    xlt_name        => $sTblN, 
-                    xlt_sheetno     => $iSheet,
-                    xlt_sheet       => $oWkS,
-                    xlt_currow      => 0,
+                    xl_t_name        => $sTblN, 
+                    xl_t_sheetno     => $iSheet,
+                    xl_t_sheet       => $oWkS,
+                    xl_t_currow      => 0,
                     col_nums        => $rhColN,
                     col_names       => $raColN,
             };
@@ -133,24 +133,24 @@ sub connect($$@) {
             }
             next;
         }
-        my $oWkS = $hTbl{$rhVal->{sheetName}}->{xlt_sheet};
+        my $oWkS = $hTbl{$rhVal->{sheetName}}->{xl_t_sheet};
         my($raColN, $rhColN, $iColCnt) = _getColName(
                             $rhAttr->{xl_ignorecase}, 
                             $rhAttr->{xl_skiphidden}, 
                             $oWkS, $rhVal->{ttlRow}, 
                             $rhVal->{startCol}, $rhVal->{colCnt});
         $hTbl{$sKey} = {
-            xlt_vtbl        => $sKey,
-            xlt_ttlrow      => $rhVal->{ttlRow},
-            xlt_startcol    => $rhVal->{startCol},
-            xlt_colcnt      => $iColCnt, #$rhVal->{colCnt},
-            xlt_datrow      => $rhVal->{datRow},
-            xlt_datlmt      => $rhVal->{datLmt},
+            xl_t_vtbl        => $sKey,
+            xl_t_ttlrow      => $rhVal->{ttlRow},
+            xl_t_startcol    => $rhVal->{startCol},
+            xl_t_colcnt      => $iColCnt, #$rhVal->{colCnt},
+            xl_t_datrow      => $rhVal->{datRow},
+            xl_t_datlmt      => $rhVal->{datLmt},
 
-            xlt_name     => $sKey,
-            xlt_sheetno  => $hTbl{$rhVal->{sheetName}}->{xlt_sheetno},
-            xlt_sheet    => $oWkS,
-            xlt_currow   => 0,
+            xl_t_name     => $sKey,
+            xl_t_sheetno  => $hTbl{$rhVal->{sheetName}}->{xl_t_sheetno},
+            xl_t_sheet    => $oWkS,
+            xl_t_currow   => 0,
             col_nums     => $rhColN,
             col_names    => $raColN,
         };
@@ -214,7 +214,7 @@ sub _getColName($$$$$$) {
 sub data_sources ($;$) {
     my($hDr, $rhAttr) = @_;
 #1. Open specified directry
-    my $sDir = ($rhAttr and exists($rhAttr->{'ex_dir'})) ? $rhAttr->{'ex_dir'} : '.';
+    my $sDir = ($rhAttr and exists($rhAttr->{'xl_dir'})) ? $rhAttr->{'xl_dir'} : '.';
     if (!opendir(DIR, $sDir)) {
         DBI::set_err($hDr, 1, "Cannot open directory $sDir");
         return undef;
@@ -383,7 +383,7 @@ sub table_info ($) {
     my @aTables;
     my $rhTbl = $hDb->FETCH('xl_tbl');
     while(my($sTbl, $rhVal) = each(%$rhTbl)) {
-        my $sKind = ($rhVal->{xlt_vtbl})? 'VTBL' : 'TABLE';
+        my $sKind = ($rhVal->{xl_t_vtbl})? 'VTBL' : 'TABLE';
         push(@aTables, [undef, undef, $sTbl, $sKind, undef]);
         
     }
@@ -635,17 +635,17 @@ sub open_table ($$$$$) {
         my @aColName;
         my %hColName;
         $rhTbl->{$sTable} = {
-                    xlt_vtbl        => undef,
-                    xlt_ttlrow      => 0,
-                    xlt_startcol    => 0,
-                    xlt_colcnt      => 0,
-                    xlt_datrow      => 1,
-                    xlt_datlmt      => undef,
+                    xl_t_vtbl        => undef,
+                    xl_t_ttlrow      => 0,
+                    xl_t_startcol    => 0,
+                    xl_t_colcnt      => 0,
+                    xl_t_datrow      => 1,
+                    xl_t_datlmt      => undef,
 
-                    xlt_name        => $sTable,
-                    xlt_sheetno     => undef,
-                    xlt_sheet       => undef,
-                    xlt_currow  => 0,
+                    xl_t_name        => $sTable,
+                    xl_t_sheetno     => undef,
+                    xl_t_sheet       => undef,
+                    xl_t_currow  => 0,
                     col_nums  => \%hColName,
                     col_names => \@aColName,
         };
@@ -654,8 +654,8 @@ sub open_table ($$$$$) {
         return undef unless(defined $rhTbl->{$sTable});
     }
     my $rhItem = $rhTbl->{$sTable};
-    $rhItem->{xlt_currow}=0;
-    $rhItem->{xlt_database} = $oData->{Database};
+    $rhItem->{xl_t_currow}=0;
+    $rhItem->{xl_t_database} = $oData->{Database};
     my $sClass = ref($oThis);
     $sClass =~ s/::Statement/::Table/;
     bless($rhItem, $sClass);
@@ -674,7 +674,7 @@ package DBD::Excel::Table;
 #-------------------------------------------------------------------------------
 sub column_num($$) {
     my($oThis, $sCol) =@_;
-    $sCol = uc($sCol) if($oThis->{xlt_database}->FETCH('xl_ignorecase'));
+    $sCol = uc($sCol) if($oThis->{xl_t_database}->FETCH('xl_ignorecase'));
     return $oThis->SUPER::column_num($sCol);
 }
 #-------------------------------------------------------------------------------
@@ -683,7 +683,7 @@ sub column_num($$) {
 #-------------------------------------------------------------------------------
 sub column($$;$) {
     my($oThis, $sCol, $sVal) =@_;
-    $sCol = uc($sCol) if($oThis->{xlt_database}->FETCH('xl_ignorecase'));
+    $sCol = uc($sCol) if($oThis->{xl_t_database}->FETCH('xl_ignorecase'));
     if(defined $sVal) {
         return $oThis->SUPER::column($sCol, $sVal);
     }
@@ -705,38 +705,38 @@ sub fetch_row ($$$) {
 #1. count up currentrow
     my $HidRows = 0;
     if($skip_hidden) {
-        for (my $i = $oThis->{xlt_sheet}->{MinRow}; $i <= $oThis->{xlt_sheet}->{MaxRow}; $i++) {
-            $HidRows++ if $oThis->{xlt_sheet}->{RowHeight}[$i] == 0;
+        for (my $i = $oThis->{xl_t_sheet}->{MinRow}; $i <= $oThis->{xl_t_sheet}->{MaxRow}; $i++) {
+            $HidRows++ if $oThis->{xl_t_sheet}->{RowHeight}[$i] == 0;
         };
     }
 
-    my $iRMax = (defined $oThis->{xlt_datlmt})? 
-                    $oThis->{xlt_datlmt} : 
-                    ($oThis->{xlt_sheet}->{MaxRow} - $oThis->{xlt_datrow} - $HidRows + 1);
-    return undef if($oThis->{xlt_currow} >= $iRMax);
-    my $oWkS = $oThis->{xlt_sheet};
+    my $iRMax = (defined $oThis->{xl_t_datlmt})? 
+                    $oThis->{xl_t_datlmt} : 
+                    ($oThis->{xl_t_sheet}->{MaxRow} - $oThis->{xl_t_datrow} - $HidRows + 1);
+    return undef if($oThis->{xl_t_currow} >= $iRMax);
+    my $oWkS = $oThis->{xl_t_sheet};
 
 #2. get row data
     my @aRow = ();
     my $iFlg = 0;
-    my $iR = $oThis->{xlt_currow} + $oThis->{xlt_datrow};
-    while((!defined ($oThis->{xlt_sheet}->{RowHeight}[$iR])|| 
-           $oThis->{xlt_sheet}->{RowHeight}[$iR] == 0) && 
-	   $skip_hidden) { 
+    my $iR = $oThis->{xl_t_currow} + $oThis->{xl_t_datrow};
+    while((!defined ($oThis->{xl_t_sheet}->{RowHeight}[$iR])|| 
+           $oThis->{xl_t_sheet}->{RowHeight}[$iR] == 0) && 
+       $skip_hidden) { 
         ++$iR;
-        ++$oThis->{xlt_currow};
-        return undef if $iRMax <= $iR - $oThis->{xlt_datrow} - $HidRows;
+        ++$oThis->{xl_t_currow};
+        return undef if $iRMax <= $iR - $oThis->{xl_t_datrow} - $HidRows;
     };
 
-    for(my $iC = $oThis->{xlt_startcol} ;
-            $iC < $oThis->{xlt_startcol}+$oThis->{xlt_colcnt}; $iC++) {
+    for(my $iC = $oThis->{xl_t_startcol} ;
+            $iC < $oThis->{xl_t_startcol}+$oThis->{xl_t_colcnt}; $iC++) {
         next if($skip_hidden &&($oWkS->{ColWidth}[$iC] == 0));
         push @aRow, (defined $oWkS->{Cells}[$iR][$iC])? 
                             $oWkS->{Cells}[$iR][$iC]->Value : undef;
         $iFlg = 1 if(defined $oWkS->{Cells}[$iR][$iC]);
     }
     return undef unless($iFlg); #No Data
-    ++$oThis->{xlt_currow};
+    ++$oThis->{xl_t_currow};
     $oThis->{row} = (@aRow ? \@aRow : undef);
     return \@aRow;
 }
@@ -749,7 +749,7 @@ sub push_names ($$$) {
 #1.get database handle
     my $oBook = $oData->{Database}->{xl_book};
 #2.add new worksheet
-    my $iWkN = $oBook->AddWorksheet($oThis->{xlt_name});
+    my $iWkN = $oBook->AddWorksheet($oThis->{xl_t_name});
     $oBook->{Worksheet}[$iWkN]->{MinCol}=0;
     $oBook->{Worksheet}[$iWkN]->{MaxCol}=0;
 
@@ -763,9 +763,9 @@ sub push_names ($$$) {
         push @aColName, $sWk;
         $hColName{$sWk} = $i;
     }
-    $oThis->{xlt_colcnt}  = $#$raNames + 1;
-    $oThis->{xlt_sheetno} = $iWkN;
-    $oThis->{xlt_sheet}   = $oBook->{Worksheet}[$iWkN];
+    $oThis->{xl_t_colcnt}  = $#$raNames + 1;
+    $oThis->{xl_t_sheetno} = $iWkN;
+    $oThis->{xl_t_sheet}   = $oBook->{Worksheet}[$iWkN];
     $oThis->{col_nums}    = \%hColName;
     $oThis->{col_names}   = \@aColName;
     return 1;
@@ -777,20 +777,20 @@ sub push_names ($$$) {
 sub drop ($$) {
     my($oThis, $oData) = @_;
 
-    die "Cannot drop vtbl $oThis->{xlt_vtbl} : " if(defined $oThis->{xlt_vtbl});
+    die "Cannot drop vtbl $oThis->{xl_t_vtbl} : " if(defined $oThis->{xl_t_vtbl});
 
 #1. delete specified worksheet
     my $oBook     = $oData->{Database}->{xl_book};
-    splice(@{$oBook->{Worksheet}}, $oThis->{xlt_sheetno}, 1 );
+    splice(@{$oBook->{Worksheet}}, $oThis->{xl_t_sheetno}, 1 );
     $oBook->{SheetCount}--;
 
     my $rhTbl = $oData->{Database}->FETCH('xl_tbl');
 
     while(my($sTbl, $rhVal) = each(%$rhTbl)) {
-        $rhVal->{xlt_sheetno}-- 
-            if($rhVal->{xlt_sheetno} > $oThis->{xlt_sheetno});
+        $rhVal->{xl_t_sheetno}-- 
+            if($rhVal->{xl_t_sheetno} > $oThis->{xl_t_sheetno});
     }
-    $rhTbl->{$oThis->{xlt_name}} = undef;
+    $rhTbl->{$oThis->{xl_t_name}} = undef;
 
     return 1;
 }
@@ -800,8 +800,8 @@ sub drop ($$) {
 #-------------------------------------------------------------------------------
 sub push_row ($$$) {
     my($oThis, $oData, $raFields) = @_;
-    if((defined $oThis->{xlt_datlmt}) &&
-                    ($oThis->{xlt_currow} >= $oThis->{xlt_datlmt})) {
+    if((defined $oThis->{xl_t_datlmt}) &&
+                    ($oThis->{xl_t_currow} >= $oThis->{xl_t_datlmt})) {
         die "Attempt to INSERT row over limit";
         return undef ;
     }
@@ -809,23 +809,23 @@ sub push_row ($$$) {
     my @aFmt;
     for(my $i = 0; $i<=$#$raFields; $i++) {
         push @aFmt, 
-            $oThis->{xlt_sheet}->{Cells}[$oThis->{xlt_datrow}][$oThis->{xlt_startcol}+$i]->{FormatNo};
+            $oThis->{xl_t_sheet}->{Cells}[$oThis->{xl_t_datrow}][$oThis->{xl_t_startcol}+$i]->{FormatNo};
     }
-    for(my $i = 0; $i<$oThis->{xlt_colcnt}; $i++) {
+    for(my $i = 0; $i<$oThis->{xl_t_colcnt}; $i++) {
         my $oFmt = $aFmt[$i];
         $oFmt ||= 0;
         my $oFld = $raFields->[$i];
         $oFld ||= '';
 
         $oData->{Database}->{xl_book}->AddCell(
-            $oThis->{xlt_sheetno}, 
-            $oThis->{xlt_currow} + $oThis->{xlt_datrow}, 
-            $i + $oThis->{xlt_startcol}, 
+            $oThis->{xl_t_sheetno}, 
+            $oThis->{xl_t_currow} + $oThis->{xl_t_datrow}, 
+            $i + $oThis->{xl_t_startcol}, 
             $oFld,
             $oFmt
             );
     }
-    ++$oThis->{xlt_currow};
+    ++$oThis->{xl_t_currow};
     return 1;
 }
 #-------------------------------------------------------------------------------
@@ -835,7 +835,7 @@ sub push_row ($$$) {
 sub seek ($$$$) {
     my($oThis, $oData, $iPos, $iWhence) = @_;
 
-    my $iRow = $oThis->{xlt_currow};
+    my $iRow = $oThis->{xl_t_currow};
     if ($iWhence == 0) {
         $iRow = $iPos;
     } 
@@ -843,17 +843,17 @@ sub seek ($$$$) {
         $iRow += $iPos;
     } 
     elsif ($iWhence == 2) {
-        my $oWkS = $oThis->{xlt_sheet};
-        my $iRowMax = (defined $oThis->{xlt_datlmt})? 
-                       $oThis->{xlt_datlmt} : 
-                       ($oWkS->{MaxRow} - $oThis->{xlt_datrow});
+        my $oWkS = $oThis->{xl_t_sheet};
+        my $iRowMax = (defined $oThis->{xl_t_datlmt})? 
+                       $oThis->{xl_t_datlmt} : 
+                       ($oWkS->{MaxRow} - $oThis->{xl_t_datrow});
         my $iR;
         for($iR = 0; $iR <= $iRowMax; $iR++) {
             my $iFlg=0; 
-            for(my $iC = $oThis->{xlt_startcol}; 
-                $iC < $oThis->{xlt_startcol} + $oThis->{xlt_colcnt};
+            for(my $iC = $oThis->{xl_t_startcol}; 
+                $iC < $oThis->{xl_t_startcol} + $oThis->{xl_t_colcnt};
                 $iC++) {
-                if(defined $oWkS->{Cells}[$iR+$oThis->{xlt_datrow}][$iC]) {
+                if(defined $oWkS->{Cells}[$iR+$oThis->{xl_t_datrow}][$iC]) {
                     $iFlg = 1;
                     last;
                 }
@@ -868,7 +868,7 @@ sub seek ($$$$) {
     if ($iRow < 0) {
         die "Illegal row number: $iRow";
     }
-    return $oThis->{xlt_currow} = $iRow;
+    return $oThis->{xl_t_currow} = $iRow;
 }
 #-------------------------------------------------------------------------------
 # truncate (DBD::Excel::Statement)
@@ -876,12 +876,12 @@ sub seek ($$$$) {
 #-------------------------------------------------------------------------------
 sub truncate ($$) {
     my($oThis, $oData) = @_;
-    for(my $iC = $oThis->{xlt_startcol}; 
-        $iC < $oThis->{xlt_startcol} + $oThis->{xlt_colcnt}; $iC++) {
-            $oThis->{xlt_sheet}->{Cells}[$oThis->{xlt_currow}+$oThis->{xlt_datrow}][$iC] = undef;
+    for(my $iC = $oThis->{xl_t_startcol}; 
+        $iC < $oThis->{xl_t_startcol} + $oThis->{xl_t_colcnt}; $iC++) {
+            $oThis->{xl_t_sheet}->{Cells}[$oThis->{xl_t_currow}+$oThis->{xl_t_datrow}][$iC] = undef;
     }
-    $oThis->{xlt_sheet}->{MaxRow} = $oThis->{xlt_currow}+$oThis->{xlt_datrow} - 1
-        unless($oThis->{xlt_vtbl});
+    $oThis->{xl_t_sheet}->{MaxRow} = $oThis->{xl_t_currow}+$oThis->{xl_t_datrow} - 1
+        unless($oThis->{xl_t_vtbl});
     return 1;
 }
 1;

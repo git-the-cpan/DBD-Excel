@@ -8,8 +8,8 @@ ExtUtils::MakeMaker::WriteMakefile(
         'INC'          => $DBI_INC_DIR,
         'dist'         => { 'SUFFIX' => '.gz',
                             'COMPRESS' => 'gzip -9f' },
-        'realclean'    => '*.xsi',
-        'PREREQ_PM'     => {
+        'realclean'    => {'*.xsi'},
+        'PREREQ_PM'    => {
                             Spreadsheet::ParseExcel => 0.22,
                             Spreadsheet::WriteExcel => 0.31,
                             DBI                     => 1,
