@@ -1,6 +1,14 @@
 Revision history for Perl extension DBD::Excel.
 
-0.03  Sat Jun  25 22:00 2001
+0.05  Fri Jul 13 19:30 2001
+    - Fix Excel.pm : column name handling
+    - Add Excel.pm : xl_ignore option
+      (Thank you,  Polak Michal)
+    - Add Excel.pm : xl_skiphidden option
+        This option is created by Ilia Sotnikov, and modified by me :-)
+      (Thank you Ilia Sotnikov)
+
+0.04  Sat Jun  25 22:00 2001
     - Fix Excel.pm : INSERT and SELECT after CREATE TABLE
       (Thank you,  Polak Michal)
 

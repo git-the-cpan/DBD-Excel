@@ -25,7 +25,7 @@ package DBD::Excel;
 use vars qw(@ISA $VERSION $hDr $err $errstr $sqlstate);
 @ISA = qw(DynaLoader);
 
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 $err = 0;           # holds error code   for DBI::err
 $errstr = "";       # holds error string for DBI::errstr
@@ -84,24 +84,40 @@ sub connect($$@) {
     return undef unless($hDb->{file});
     my $oExcel = new Spreadsheet::ParseExcel::SaveParser;
     my $oBook = $oExcel->Parse($hDb->{file}, $rhAttr->{xl_fmt});
+    return undef unless defined $oBook;
 
     my %hTbl;
     for(my $iSheet=0; $iSheet < $oBook->{SheetCount} ; $iSheet++) {
         my $oWkS = $oBook->{Worksheet}[$iSheet];
         $oWkS->{MaxCol} ||=0;
         $oWkS->{MinCol} ||=0;
-        my($raColN, $rhColN) = _getColName($oWkS, 0, $oWkS->{MinCol}, 
-                            $oWkS->{MaxCol}-$oWkS->{MinCol}+1);
-
-        $hTbl{$oBook->{Worksheet}[$iSheet]->{Name}} = {
+#        my($raColN, $rhColN) = _getColName($oWkS, 0, $oWkS->{MinCol}, 
+#                            $oWkS->{MaxCol}-$oWkS->{MinCol}+1);
+        my $MaxCol = defined ($oWkS->{MaxCol}) ? $oWkS->{MaxCol} : 0;
+        my $MinCol = defined ($oWkS->{MinCol}) ? $oWkS->{MinCol} : 0;
+            my($raColN, $rhColN, $iColCnt) = 
+                _getColName($rhAttr->{xl_ignorecase}, 
+                            $rhAttr->{xl_skiphidden}, 
+                            $oWkS, 0, $MinCol, $MaxCol-$MinCol+1);
+=cmmt
+        my $HidCols=0;
+        if $rhAttr->{xl_skiphidden} {
+            for (my $i = $MinCol, $HidCols = 0; $i <= $MaxCol; $i++) {
+                $HidCols++ if $oWkS->{ColWidth}[$i] && $oWkS->{ColWidth}[$i] == 0;
+            };
+        }
+=cut
+        my $sTblN = ($rhAttr->{xl_ignorecase})? uc($oWkS->{Name}): $oWkS->{Name};
+        $hTbl{$sTblN} = {
                     xlt_vtbl        => undef,
                     xlt_ttlrow      => 0,
                     xlt_startcol    => $oWkS->{MinCol},
-                    xlt_colcnt      => $oWkS->{MaxCol}-$oWkS->{MinCol}+1,
+#                    xlt_colcnt      => $oWkS->{MaxCol}-$oWkS->{MinCol}+1,
+                    xlt_colcnt      => $iColCnt, # $MaxCol - $MinCol - $HidCols + 1,
                     xlt_datrow      => 1,
                     xlt_datlmt      => undef,
 
-                    xlt_name        => $oWkS->{Name},
+                    xlt_name        => $sTblN, 
                     xlt_sheetno     => $iSheet,
                     xlt_sheet       => $oWkS,
                     xlt_currow      => 0,
@@ -110,6 +126,7 @@ sub connect($$@) {
             };
     }
     while(my($sKey, $rhVal)= each(%{$rhAttr->{xl_vtbl}})) {
+        $sKey = uc($sKey) if($rhAttr->{xl_ignorecase});
         unless($hTbl{$rhVal->{sheetName}}) {
             if ($hDb->FETCH('Warn')) {
                 warn qq/There is no "$rhVal->{sheetName}"/;
@@ -117,13 +134,16 @@ sub connect($$@) {
             next;
         }
         my $oWkS = $hTbl{$rhVal->{sheetName}}->{xlt_sheet};
-        my($raColN, $rhColN) = _getColName($oWkS, $rhVal->{ttlRow}, 
+        my($raColN, $rhColN, $iColCnt) = _getColName(
+                            $rhAttr->{xl_ignorecase}, 
+                            $rhAttr->{xl_skiphidden}, 
+                            $oWkS, $rhVal->{ttlRow}, 
                             $rhVal->{startCol}, $rhVal->{colCnt});
         $hTbl{$sKey} = {
             xlt_vtbl        => $sKey,
             xlt_ttlrow      => $rhVal->{ttlRow},
             xlt_startcol    => $rhVal->{startCol},
-            xlt_colcnt      => $rhVal->{colCnt},
+            xlt_colcnt      => $iColCnt, #$rhVal->{colCnt},
             xlt_datrow      => $rhVal->{datRow},
             xlt_datlmt      => $rhVal->{datLmt},
 
@@ -138,46 +158,54 @@ sub connect($$@) {
     $hDb->STORE('xl_tbl',    \%hTbl);
     $hDb->STORE('xl_parser', $oExcel);
     $hDb->STORE('xl_book',   $oBook);
-
+    $hDb->STORE('xl_skiphidden', $rhAttr->{xl_skiphidden}) if $rhAttr->{xl_skiphidden};
+    $hDb->STORE('xl_ignorecase', $rhAttr->{xl_ignorecase}) if $rhAttr->{xl_ignorecase};
     return $hDb;
 }
 #-------------------------------------------------------------------------------
 # _getColName (DBD::Excel::dr)
 #    internal use
 #-------------------------------------------------------------------------------
-sub _getColName($$$$) {
-    my($oWkS, $iRow, $iColS, $iColCnt) = @_;
-    my $iColMax;
+sub _getColName($$$$$$) {
+    my($iIgnore, $iHidden, $oWkS, $iRow, $iColS, $iColCnt) = @_;
+    my $iColMax;    #MAXIAM Range of Columns (Contains HIDDEN Columns)
 
-#   $iColS ||= 0;
-    if(defined $iColCnt) {
-        if(($iColS + $iColCnt - 1) <= $oWkS->{MaxCol}){
+    my $iCntWk = 0;
+    my $MaxCol = defined ($oWkS->{MaxCol}) ? $oWkS->{MaxCol} : 0;
+     if(defined $iColCnt) {
+        if(($iColS + $iColCnt - 1) <= $MaxCol){
             $iColMax = $iColS + $iColCnt - 1;
         }
         else{
-            $iColMax = $oWkS->{MaxCol};
+            $iColMax = $MaxCol;
         }
     }
     else {
-        $iColMax = $oWkS->{MaxCol};
+        $iColMax = $MaxCol;
     }
 #2.2 get column name
     my (@aColName, %hColName);
     for(my $iC = $iColS; $iC <= $iColMax; $iC++) {
+        next if($iHidden &&($oWkS->{ColWidth}[$iC] == 0));
+        $iCntWk++;
         my $sName;
         if(defined $iRow) {
             my $oWkC = $oWkS->{Cells}[$iRow][$iC];
-            $sName = (defined $oWkC)? $oWkC->Value: "COL_${iC}_";
+            $sName = (defined $oWkC && defined $oWkC->Value)?
+            $oWkC->Value: "COL_${iC}_";
         }
         else {
             $sName = "COL_${iC}_";
         }
-        my $iCnt = grep(/\Q$sName\E/, @aColName);
-        $sName = "${sName}_${iCnt}" if($iCnt);
+        if(grep(/^\Q$sName\E$/, @aColName)) {
+            my $iCnt = grep(/^\Q$sName\E_(\d+)_$/, @aColName);
+            $sName = "${sName}_${iCnt}_";
+        }
+        $sName = uc($sName) if($iIgnore);
         push @aColName, $sName;
         $hColName{$sName} = ($iC - $iColS);
     }
-    return (\@aColName, \%hColName)
+    return (\@aColName, \%hColName, $iColCnt);
 }
 #-------------------------------------------------------------------------------
 # data_sources (DBD::Excel::dr)
@@ -598,6 +626,7 @@ sub open_table ($$$$$) {
 #0. Init
     my $rhTbl = $oData->{Database}->FETCH('xl_tbl');
 #1. Create Mode
+    $sTable = uc($sTable) if($oData->{Database}->FETCH('xl_ignorecase'));
     if ($createMode) {
         if(defined $rhTbl->{$sTable}) {
             die "Cannot create table $sTable : Already exists";
@@ -626,6 +655,7 @@ sub open_table ($$$$$) {
     }
     my $rhItem = $rhTbl->{$sTable};
     $rhItem->{xlt_currow}=0;
+    $rhItem->{xlt_database} = $oData->{Database};
     my $sClass = ref($oThis);
     $sClass =~ s/::Statement/::Table/;
     bless($rhItem, $sClass);
@@ -639,15 +669,50 @@ package DBD::Excel::Table;
 
 @DBD::Excel::Table::ISA = qw(SQL::Eval::Table);
 #-------------------------------------------------------------------------------
+# column_num (DBD::Excel::Statement)
+#   Called with "SELECT ... FETCH"
+#-------------------------------------------------------------------------------
+sub column_num($$) {
+    my($oThis, $sCol) =@_;
+    $sCol = uc($sCol) if($oThis->{xlt_database}->FETCH('xl_ignorecase'));
+    return $oThis->SUPER::column_num($sCol);
+}
+#-------------------------------------------------------------------------------
+# column(DBD::Excel::Statement)
+#   Called with "SELECT ... FETCH"
+#-------------------------------------------------------------------------------
+sub column($$;$) {
+    my($oThis, $sCol, $sVal) =@_;
+    $sCol = uc($sCol) if($oThis->{xlt_database}->FETCH('xl_ignorecase'));
+    if(defined $sVal) {
+        return $oThis->SUPER::column($sCol, $sVal);
+    }
+    else {
+        return $oThis->SUPER::column($sCol);
+    }
+}
+#-------------------------------------------------------------------------------
 # fetch_row (DBD::Excel::Statement)
 #   Called with "SELECT ... FETCH"
 #-------------------------------------------------------------------------------
 sub fetch_row ($$$) {
     my($oThis, $oData, $row) = @_;
+
+    my $skip_hidden = 0;
+    $skip_hidden = $oData->{Database}->FETCH('xl_skiphidden') if
+    $oData->{Database}->FETCH('xl_skiphidden');
+
 #1. count up currentrow
+    my $HidRows = 0;
+    if($skip_hidden) {
+        for (my $i = $oThis->{xlt_sheet}->{MinRow}; $i <= $oThis->{xlt_sheet}->{MaxRow}; $i++) {
+            $HidRows++ if $oThis->{xlt_sheet}->{RowHeight}[$i] == 0;
+        };
+    }
+
     my $iRMax = (defined $oThis->{xlt_datlmt})? 
                     $oThis->{xlt_datlmt} : 
-                    ($oThis->{xlt_sheet}->{MaxRow} - $oThis->{xlt_datrow}+1);
+                    ($oThis->{xlt_sheet}->{MaxRow} - $oThis->{xlt_datrow} - $HidRows + 1);
     return undef if($oThis->{xlt_currow} >= $iRMax);
     my $oWkS = $oThis->{xlt_sheet};
 
@@ -655,10 +720,19 @@ sub fetch_row ($$$) {
     my @aRow = ();
     my $iFlg = 0;
     my $iR = $oThis->{xlt_currow} + $oThis->{xlt_datrow};
+    while((!defined ($oThis->{xlt_sheet}->{RowHeight}[$iR])|| 
+           $oThis->{xlt_sheet}->{RowHeight}[$iR] == 0) && 
+	   $skip_hidden) { 
+        ++$iR;
+        ++$oThis->{xlt_currow};
+        return undef if $iRMax <= $iR - $oThis->{xlt_datrow} - $HidRows;
+    };
+
     for(my $iC = $oThis->{xlt_startcol} ;
             $iC < $oThis->{xlt_startcol}+$oThis->{xlt_colcnt}; $iC++) {
+        next if($skip_hidden &&($oWkS->{ColWidth}[$iC] == 0));
         push @aRow, (defined $oWkS->{Cells}[$iR][$iC])? 
-                        $oWkS->{Cells}[$iR][$iC]->Value : undef;
+                            $oWkS->{Cells}[$iR][$iC]->Value : undef;
         $iFlg = 1 if(defined $oWkS->{Cells}[$iR][$iC]);
     }
     return undef unless($iFlg); #No Data
@@ -684,8 +758,10 @@ sub push_names ($$$) {
     my %hColName =();
     for(my $i = 0; $i<=$#$raNames; $i++) {
         $oBook->AddCell($iWkN, 0, $i, $raNames->[$i], 0);
-        push @aColName, $raNames->[$i];
-        $hColName{$raNames->[$i]} = $i;
+        my $sWk = ($oData->{Database}->{xl_ignorecase})? 
+                    uc($raNames->[$i]) : $raNames->[$i];
+        push @aColName, $sWk;
+        $hColName{$sWk} = $i;
     }
     $oThis->{xlt_colcnt}  = $#$raNames + 1;
     $oThis->{xlt_sheetno} = $iWkN;
@@ -951,6 +1027,22 @@ This attribute is used for setting the formatter class for parsing.
 This attribute is used only with C<data_sources> on setting the directory where 
 Excel files ('*.xls') are searched. It defaults to the current directory (".").
 
+=item xl_vtbl
+
+assumes specified area as a table.
+I<See sample/tex.pl>.
+
+=item xl_skiphidden
+
+skip hidden rows(=row height is 0) and hidden columns(=column width is 0).
+I<See sample/thidden.pl>.
+
+=item xl_ignorecase
+
+set casesensitive or not about table name and columns. 
+Default is sensitive (maybe as SQL::Statement).
+I<See sample/thidden.pl>.
+
 =back
 
 
@@ -1015,8 +1107,13 @@ There are too many TODO things. So I can't determind what is BUG. :-)
 
 Kawai Takanori (Hippo2000) kwitknr@cpan.org
 
+  Homepage:
     http://member.nifty.ne.jp/hippo2000/            (Japanese)
     http://member.nifty.ne.jp/hippo2000/index_e.htm (English)
+
+  Wiki:
+    http://www.hippo2000.net/cgi-bin/KbWiki/KbWiki.pl  (Japanese)
+    http://www.hippo2000.net/cgi-bin/KbWikiE/KbWiki.pl (English)
 
 =head1 SEE ALSO
 
@@ -1025,7 +1122,7 @@ DBI, Spreadsheet::WriteExcel, Spreadsheet::ParseExcel, SQL::Statement
 
 =head1 COPYRIGHT
 
-Copyright (c) 2001 Kawai Takanori
+Copyright (c) 2001 KAWAI,Takanori
 All rights reserved.
 
 You may distribute under the terms of either the GNU General Public
