@@ -1,4 +1,11 @@
 Revision history for Perl extension DBD::Excel.
 
+0.03  Sat Jun  2 18:00 2001
+    - Mod Excel.pm : non-Ascii table name and column name
+      (Thank you,  Yamamura Seiko)
+
+0.02  Sun May  6 12:00 2001
+    - Mod Excel.pm : modify some usage
+
 0.01  Tue May  3 12:00 2001
     - original version; (EXPERIMENTAL)

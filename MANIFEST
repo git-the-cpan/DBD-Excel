@@ -6,8 +6,11 @@ README
 test.pl
 sample/README
 sample/dbdtest.xls
+sample/testj.pl
 sample/tex.pl
 sample/texj.pl
 sample/res_tex
 sample/res_texj
+sample/res_testj
 sample/newxl.xls
+sample/testj.xls

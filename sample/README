@@ -1,7 +1,10 @@
 tex.pl      : Sample Script for DBD::Excel
 texj.pl     : Sample Script for DBD::Excel(with Japanese)
+testj.pl    : Sample Script for DBD::Excel(with Japanese, Japanese named table)
 res_tex     : result of tex.pl
 res_texj    : result of texj.pl
+res_testj   : result of testj.pl
 dbdtest.xls : source Excel file for text.pl
+testj.xls   : source Excel file for testj.pl
 newxl.xls   : result Excel file of tex.pl
 newxlj.xls  : result Excel file of texj.pl

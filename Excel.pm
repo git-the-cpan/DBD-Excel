@@ -25,7 +25,7 @@ package DBD::Excel;
 use vars qw(@ISA $VERSION $hDr $err $errstr $sqlstate);
 @ISA = qw(DynaLoader);
 
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 $err = 0;           # holds error code   for DBI::err
 $errstr = "";       # holds error string for DBI::errstr
@@ -161,9 +161,15 @@ sub _getColName($$$$) {
 #2.2 get column name
     my (@aColName, %hColName);
     for(my $iC = $iColS; $iC <= $iColMax; $iC++) {
-        my $oWkC = $oWkS->{Cells}[$iRow][$iC];
-        my $sName = (defined $oWkC)? $oWkC->Value: "COL:$iC";
-        my $iCnt = grep(/$sName/, @aColName);
+        my $sName;
+        if(defined $iRow) {
+            my $oWkC = $oWkS->{Cells}[$iRow][$iC];
+            $sName = (defined $oWkC)? $oWkC->Value: "COL_${iC}_";
+        }
+        else {
+            $sName = "COL_${iC}_";
+        }
+        my $iCnt = grep(/\Q$sName\E/, @aColName);
         $sName = "${sName}_${iCnt}" if($iCnt);
         push @aColName, $sName;
         $hColName{$sName} = ($iC-$iColS);

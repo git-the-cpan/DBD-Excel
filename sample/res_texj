@@ -50,6 +50,7 @@ TABLE: TEST_V
 TABLE: TESTV
 DSN: DBI:Excel:file=./dbdtest.xls
 DSN: DBI:Excel:file=./newxl.xls
+DSN: DBI:Excel:file=./testj.xls
 #--------------------------------------------------------------
 # 8. Japanese test
 DATA:1,川合孝典,オープンシステム事業部,37,GCD00051@nifty.ne.jp

@@ -50,5 +50,7 @@ TABLE: TEST_V
 TABLE: TESTV
 DSN: DBI:Excel:file=./dbdtest.xls
 DSN: DBI:Excel:file=./newxl.xls
+DSN: DBI:Excel:file=./newxlj.xls
+DSN: DBI:Excel:file=./testj.xls
 #--------------------------------------------------------------
 # 8. Save this Excel file
